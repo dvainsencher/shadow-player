@@ -59,6 +59,8 @@ function renderSpeedButtons() {
     button.onclick = () => setSpeed(speed);
     container.append(button);
   });
+  // Keep the keyboard hint in sync with SPEEDS instead of hardcoding a count.
+  $("speedHint").textContent = `1-${SPEEDS.length} set speed`;
 }
 
 function setSpeed(speed) {

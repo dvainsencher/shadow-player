@@ -32,3 +32,10 @@ gitignored — it's regenerated locally, not committed. `presentation.json` and
 `presentation.txt` in this repo are a small sample; running `./generate.sh` on your
 own `presentation.txt` overwrites `presentation.json` and regenerates `audio/` to
 match.
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+Runs on every push/PR via GitHub Actions (`.github/workflows/tests.yml`).

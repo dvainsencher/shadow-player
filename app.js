@@ -1,17 +1,204 @@
-let manifest,chunks=[],current=0,hidden=false,selectedSpeed=.85;const $=id=>document.getElementById(id),audio=new Audio();
-async function init(){let r=await fetch("presentation.json",{cache:"no-store"});if(!r.ok)throw Error("Run ./generate.sh first.");manifest=await r.json();selectedSpeed=manifest.speed||.85;
-manifest.sections.forEach((s,si)=>s.chunks.forEach((c,ci)=>chunks.push({...c,sectionIndex:si,chunkIndex:ci,sectionTitle:s.title})));
-$("meta").textContent=`${manifest.sections.length} sections · ${chunks.length} chunks · ${manifest.voice} · generated at ${manifest.speed}×`;renderNav();renderReader();select(0);document.querySelector(`[data-speed="${selectedSpeed}"]`)?.classList.add("active-speed")}
-function renderNav(){let n=$("sections");manifest.sections.forEach((s,si)=>{let t=document.createElement("div");t.className="section-title";t.textContent=s.title;n.append(t);s.chunks.forEach((c,ci)=>{let b=document.createElement("button");b.className="chunk-link";b.textContent=`Chunk ${ci+1}`;b.onclick=()=>select(chunks.findIndex(x=>x.id===c.id));n.append(b)})})}
-function renderReader(){let r=$("reader");chunks.forEach((c,i)=>{let e=document.createElement("div");e.className="chunk";e.dataset.index=i;e.textContent=c.text;e.onclick=()=>select(i);r.append(e)})}
-function select(i){if(!chunks.length)return;current=Math.max(0,Math.min(i,chunks.length-1));audio.pause();audio.currentTime=0;audio.src=chunks[current].audio;audio.playbackRate=selectedSpeed;update()}
-function update(){document.querySelectorAll(".chunk").forEach((e,i)=>{e.classList.toggle("active",i===current);e.classList.toggle("dim",i!==current)});document.querySelectorAll(".chunk-link").forEach((e,i)=>e.classList.toggle("active",i===current));
-let c=chunks[current];$("position").textContent=`${c.sectionTitle} · Chunk ${c.chunkIndex+1}/${manifest.sections[c.sectionIndex].chunks.length} · ${current+1}/${chunks.length}`;
-document.querySelector(`.chunk[data-index="${current}"]`)?.scrollIntoView({block:"center",behavior:"smooth"});$("play").textContent="▶ Play"}
-$("play").onclick=()=>audio.paused?(audio.play(),$("play").textContent="⏸ Pause"):(audio.pause(),$("play").textContent="▶ Play");
-$("repeat").onclick=()=>{audio.currentTime=0;audio.play()};$("prev").onclick=()=>select(current-1);$("next").onclick=()=>select(current+1);
-audio.onended=()=>{$("play").textContent="▶ Play"};
-document.querySelectorAll("[data-speed]").forEach(b=>b.onclick=()=>{selectedSpeed=+b.dataset.speed;audio.playbackRate=selectedSpeed;document.querySelectorAll("[data-speed]").forEach(x=>x.classList.toggle("active-speed",x===b))});
-$("hideBtn").onclick=()=>{hidden=!hidden;$("reader").classList.toggle("hidden",hidden);$("hideBtn").innerHTML=hidden?"Show text <kbd>H</kbd>":"Hide text <kbd>H</kbd>"};
-document.onkeydown=e=>{if(["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName))return;if(e.code==="Space"){e.preventDefault();$("play").click()}else if(e.key.toLowerCase()==="r")$("repeat").click();else if(e.key==="ArrowLeft")select(current-1);else if(e.key==="ArrowRight")select(current+1);else if(e.key.toLowerCase()==="h")$("hideBtn").click();else if(e.key==="1")document.querySelector('[data-speed="0.85"]').click();else if(e.key==="2")document.querySelector('[data-speed="1"]').click();else if(e.key==="3")document.querySelector('[data-speed="1.15"]').click()};
-init().catch(e=>{$("reader").textContent=e.message;console.error(e)});
+// Playback speeds offered to the user. The number-key shortcut for each
+// speed is just its position in this list (1 = first speed, 2 = second, …),
+// so adding or removing a speed doesn't require touching anything else.
+const SPEEDS = [0.7, 0.85, 1.0, 1.15, 1.3, 1.5];
+const DEFAULT_SPEED = 0.85;
+
+const $ = (id) => document.getElementById(id);
+const audio = new Audio();
+
+const state = {
+  manifest: null,
+  chunks: [], // flattened list of every chunk across all sections
+  current: 0, // index into `chunks`
+  textHidden: false,
+  speed: DEFAULT_SPEED,
+};
+
+async function init() {
+  const response = await fetch("presentation.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("Run ./generate.sh first.");
+  state.manifest = await response.json();
+  state.speed = state.manifest.speed || DEFAULT_SPEED;
+
+  state.chunks = flattenChunks(state.manifest);
+
+  renderMeta();
+  renderSpeedButtons();
+  renderNav();
+  renderReader();
+  selectChunk(0);
+}
+
+function flattenChunks(manifest) {
+  const chunks = [];
+  manifest.sections.forEach((section, sectionIndex) => {
+    section.chunks.forEach((chunk, chunkIndex) => {
+      chunks.push({ ...chunk, sectionIndex, chunkIndex, sectionTitle: section.title });
+    });
+  });
+  return chunks;
+}
+
+function renderMeta() {
+  const { sections } = state.manifest;
+  $("meta").textContent =
+    `${sections.length} sections · ${state.chunks.length} chunks · ` +
+    `${state.manifest.voice} · generated at ${state.manifest.speed}×`;
+}
+
+function renderSpeedButtons() {
+  const container = $("speedButtons");
+  container.innerHTML = "";
+  SPEEDS.forEach((speed, index) => {
+    const button = document.createElement("button");
+    button.textContent = `${speed}×`;
+    button.dataset.speed = String(speed);
+    button.title = `Press ${index + 1}`;
+    button.classList.toggle("active-speed", speed === state.speed);
+    button.onclick = () => setSpeed(speed);
+    container.append(button);
+  });
+}
+
+function setSpeed(speed) {
+  state.speed = speed;
+  audio.playbackRate = speed;
+  document.querySelectorAll("#speedButtons button").forEach((button) => {
+    button.classList.toggle("active-speed", Number(button.dataset.speed) === speed);
+  });
+}
+
+function renderNav() {
+  const nav = $("sections");
+  state.manifest.sections.forEach((section) => {
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.textContent = section.title;
+    nav.append(title);
+
+    section.chunks.forEach((chunk, chunkIndex) => {
+      const link = document.createElement("button");
+      link.className = "chunk-link";
+      link.textContent = `Chunk ${chunkIndex + 1}`;
+      link.onclick = () => selectChunk(state.chunks.findIndex((c) => c.id === chunk.id));
+      nav.append(link);
+    });
+  });
+}
+
+function renderReader() {
+  const reader = $("reader");
+  state.chunks.forEach((chunk, index) => {
+    const el = document.createElement("div");
+    el.className = "chunk";
+    el.dataset.index = String(index);
+    el.textContent = chunk.text;
+    el.onclick = () => selectChunk(index);
+    reader.append(el);
+  });
+}
+
+function selectChunk(index) {
+  if (!state.chunks.length) return;
+  state.current = Math.max(0, Math.min(index, state.chunks.length - 1));
+
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = state.chunks[state.current].audio;
+  audio.playbackRate = state.speed;
+
+  updateUI();
+}
+
+function updateUI() {
+  document.querySelectorAll(".chunk").forEach((el, i) => {
+    el.classList.toggle("active", i === state.current);
+    el.classList.toggle("dim", i !== state.current);
+  });
+  document.querySelectorAll(".chunk-link").forEach((el, i) => {
+    el.classList.toggle("active", i === state.current);
+  });
+
+  const chunk = state.chunks[state.current];
+  const totalInSection = state.manifest.sections[chunk.sectionIndex].chunks.length;
+  $("position").textContent =
+    `${chunk.sectionTitle} · Chunk ${chunk.chunkIndex + 1}/${totalInSection} · ` +
+    `${state.current + 1}/${state.chunks.length}`;
+
+  document
+    .querySelector(`.chunk[data-index="${state.current}"]`)
+    ?.scrollIntoView({ block: "center", behavior: "smooth" });
+
+  setPlayButtonLabel(false);
+}
+
+function setPlayButtonLabel(isPlaying) {
+  $("play").textContent = isPlaying ? "⏸ Pause" : "▶ Play";
+}
+
+function togglePlayback() {
+  if (audio.paused) {
+    audio.play();
+    setPlayButtonLabel(true);
+  } else {
+    audio.pause();
+    setPlayButtonLabel(false);
+  }
+}
+
+function repeatChunk() {
+  audio.currentTime = 0;
+  audio.play();
+  setPlayButtonLabel(true);
+}
+
+function toggleTextHidden() {
+  state.textHidden = !state.textHidden;
+  $("reader").classList.toggle("hidden", state.textHidden);
+  $("hideBtn").innerHTML = state.textHidden ? "Show text <kbd>H</kbd>" : "Hide text <kbd>H</kbd>";
+}
+
+function bindControls() {
+  $("play").onclick = togglePlayback;
+  $("repeat").onclick = repeatChunk;
+  $("prev").onclick = () => selectChunk(state.current - 1);
+  $("next").onclick = () => selectChunk(state.current + 1);
+  $("hideBtn").onclick = toggleTextHidden;
+  audio.onended = () => setPlayButtonLabel(false);
+}
+
+const KEY_ACTIONS = {
+  " ": () => togglePlayback(),
+  r: () => repeatChunk(),
+  arrowleft: () => selectChunk(state.current - 1),
+  arrowright: () => selectChunk(state.current + 1),
+  h: () => toggleTextHidden(),
+};
+
+function bindKeyboard() {
+  document.onkeydown = (e) => {
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+    // Number keys select a speed by position (1 = SPEEDS[0], 2 = SPEEDS[1], ...).
+    const asNumber = Number(e.key);
+    if (Number.isInteger(asNumber) && asNumber >= 1 && asNumber <= SPEEDS.length) {
+      setSpeed(SPEEDS[asNumber - 1]);
+      return;
+    }
+
+    const key = e.code === "Space" ? " " : e.key.toLowerCase();
+    const action = KEY_ACTIONS[key];
+    if (action) {
+      e.preventDefault();
+      action();
+    }
+  };
+}
+
+bindControls();
+bindKeyboard();
+init().catch((e) => {
+  $("reader").textContent = e.message;
+  console.error(e);
+});

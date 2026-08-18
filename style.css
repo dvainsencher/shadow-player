@@ -7,9 +7,10 @@ nav,main{background:var(--panel);border:1px solid var(--border);border-radius:12
 .section-title{font-size:13px;font-weight:700;margin:12px 5px 5px}.section-title:first-child{margin-top:2px}
 .chunk-link{width:100%;text-align:left;border:0;background:transparent;padding:7px 8px;border-radius:7px;color:#555;cursor:pointer}
 .chunk-link.active{background:var(--active);color:#222;font-weight:650}
-main{padding:24px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+main{padding:24px}.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 button{border:1px solid #cfd0d3;background:#f8f8f8;border-radius:8px;padding:9px 12px;font:inherit;cursor:pointer}
 button.primary{background:#222;color:white;border-color:#222;min-width:110px}.active-speed{outline:2px solid #999}
+.speed{display:flex;gap:6px;flex-wrap:wrap}.speed button{padding:7px 10px;font-size:13px}
 #reader{font-size:25px;line-height:1.72;max-width:900px;min-height:380px;padding:10px 4px}
 .chunk{padding:16px 18px;margin:0 0 10px;border-radius:10px;transition:.12s}.chunk.active{background:var(--active);box-shadow:inset 4px 0 var(--active-border)}.chunk.dim{color:#888}
 #reader.hidden .chunk{filter:blur(8px);user-select:none}.player{display:flex;gap:8px;justify-content:center;padding-top:18px;border-top:1px solid var(--border)}

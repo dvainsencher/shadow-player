@@ -1,0 +1,9 @@
+# Generated audio (regenerate locally with ./generate.sh)
+audio/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

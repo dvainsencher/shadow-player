@@ -1,0 +1,17 @@
+let manifest,chunks=[],current=0,hidden=false,selectedSpeed=.85;const $=id=>document.getElementById(id),audio=new Audio();
+async function init(){let r=await fetch("presentation.json",{cache:"no-store"});if(!r.ok)throw Error("Run ./generate.sh first.");manifest=await r.json();selectedSpeed=manifest.speed||.85;
+manifest.sections.forEach((s,si)=>s.chunks.forEach((c,ci)=>chunks.push({...c,sectionIndex:si,chunkIndex:ci,sectionTitle:s.title})));
+$("meta").textContent=`${manifest.sections.length} sections · ${chunks.length} chunks · ${manifest.voice} · generated at ${manifest.speed}×`;renderNav();renderReader();select(0);document.querySelector(`[data-speed="${selectedSpeed}"]`)?.classList.add("active-speed")}
+function renderNav(){let n=$("sections");manifest.sections.forEach((s,si)=>{let t=document.createElement("div");t.className="section-title";t.textContent=s.title;n.append(t);s.chunks.forEach((c,ci)=>{let b=document.createElement("button");b.className="chunk-link";b.textContent=`Chunk ${ci+1}`;b.onclick=()=>select(chunks.findIndex(x=>x.id===c.id));n.append(b)})})}
+function renderReader(){let r=$("reader");chunks.forEach((c,i)=>{let e=document.createElement("div");e.className="chunk";e.dataset.index=i;e.textContent=c.text;e.onclick=()=>select(i);r.append(e)})}
+function select(i){if(!chunks.length)return;current=Math.max(0,Math.min(i,chunks.length-1));audio.pause();audio.currentTime=0;audio.src=chunks[current].audio;audio.playbackRate=selectedSpeed;update()}
+function update(){document.querySelectorAll(".chunk").forEach((e,i)=>{e.classList.toggle("active",i===current);e.classList.toggle("dim",i!==current)});document.querySelectorAll(".chunk-link").forEach((e,i)=>e.classList.toggle("active",i===current));
+let c=chunks[current];$("position").textContent=`${c.sectionTitle} · Chunk ${c.chunkIndex+1}/${manifest.sections[c.sectionIndex].chunks.length} · ${current+1}/${chunks.length}`;
+document.querySelector(`.chunk[data-index="${current}"]`)?.scrollIntoView({block:"center",behavior:"smooth"});$("play").textContent="▶ Play"}
+$("play").onclick=()=>audio.paused?(audio.play(),$("play").textContent="⏸ Pause"):(audio.pause(),$("play").textContent="▶ Play");
+$("repeat").onclick=()=>{audio.currentTime=0;audio.play()};$("prev").onclick=()=>select(current-1);$("next").onclick=()=>select(current+1);
+audio.onended=()=>{$("play").textContent="▶ Play"};
+document.querySelectorAll("[data-speed]").forEach(b=>b.onclick=()=>{selectedSpeed=+b.dataset.speed;audio.playbackRate=selectedSpeed;document.querySelectorAll("[data-speed]").forEach(x=>x.classList.toggle("active-speed",x===b))});
+$("hideBtn").onclick=()=>{hidden=!hidden;$("reader").classList.toggle("hidden",hidden);$("hideBtn").innerHTML=hidden?"Show text <kbd>H</kbd>":"Hide text <kbd>H</kbd>"};
+document.onkeydown=e=>{if(["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName))return;if(e.code==="Space"){e.preventDefault();$("play").click()}else if(e.key.toLowerCase()==="r")$("repeat").click();else if(e.key==="ArrowLeft")select(current-1);else if(e.key==="ArrowRight")select(current+1);else if(e.key.toLowerCase()==="h")$("hideBtn").click();else if(e.key==="1")document.querySelector('[data-speed="0.85"]').click();else if(e.key==="2")document.querySelector('[data-speed="1"]').click();else if(e.key==="3")document.querySelector('[data-speed="1.15"]').click()};
+init().catch(e=>{$("reader").textContent=e.message;console.error(e)});

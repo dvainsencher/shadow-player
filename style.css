@@ -1,0 +1,18 @@
+:root{--bg:#f3f4f6;--panel:#fff;--text:#202124;--muted:#73777d;--border:#dedfe2;--active:#fff3c4;--active-border:#e0bd4e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+header{min-height:82px;padding:18px 4vw;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--muted)}h1{margin:2px 0 3px;font-size:21px}#meta,#position{color:var(--muted);font-size:13px}
+.layout{max-width:1250px;margin:28px auto;padding:0 22px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px}
+nav,main{background:var(--panel);border:1px solid var(--border);border-radius:12px}nav{padding:13px;height:fit-content;position:sticky;top:18px}
+.section-title{font-size:13px;font-weight:700;margin:12px 5px 5px}.section-title:first-child{margin-top:2px}
+.chunk-link{width:100%;text-align:left;border:0;background:transparent;padding:7px 8px;border-radius:7px;color:#555;cursor:pointer}
+.chunk-link.active{background:var(--active);color:#222;font-weight:650}
+main{padding:24px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+button{border:1px solid #cfd0d3;background:#f8f8f8;border-radius:8px;padding:9px 12px;font:inherit;cursor:pointer}
+button.primary{background:#222;color:white;border-color:#222;min-width:110px}.active-speed{outline:2px solid #999}
+#reader{font-size:25px;line-height:1.72;max-width:900px;min-height:380px;padding:10px 4px}
+.chunk{padding:16px 18px;margin:0 0 10px;border-radius:10px;transition:.12s}.chunk.active{background:var(--active);box-shadow:inset 4px 0 var(--active-border)}.chunk.dim{color:#888}
+#reader.hidden .chunk{filter:blur(8px);user-select:none}.player{display:flex;gap:8px;justify-content:center;padding-top:18px;border-top:1px solid var(--border)}
+.hint{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:12px;padding-top:15px}
+kbd{border:1px solid #ccc;border-bottom-width:2px;border-radius:4px;padding:1px 5px;font-size:11px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}nav{position:static}#reader{font-size:21px}}

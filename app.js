@@ -23,6 +23,7 @@ const state = {
 async function init() {
   bindControls();
   bindKeyboard();
+  syncPlayerBarHeight();
 
   state.presentations = await fetchPresentations();
   renderPresentationList();
@@ -49,7 +50,6 @@ function renderPresentationList() {
     const link = document.createElement("button");
     link.className = "presentation-link";
     link.dataset.slug = presentation.slug;
-    link.classList.toggle("active", presentation.slug === state.slug);
 
     const title = document.createElement("span");
     title.className = "presentation-title";
@@ -63,11 +63,15 @@ function renderPresentationList() {
     link.onclick = () => loadPresentation(presentation.slug).catch(reportError);
     list.append(link);
   });
+  updatePresentationActiveState();
 }
 
 function updatePresentationActiveState() {
   document.querySelectorAll(".presentation-link").forEach((link) => {
-    link.classList.toggle("active", link.dataset.slug === state.slug);
+    const isActive = link.dataset.slug === state.slug;
+    link.classList.toggle("active", isActive);
+    if (isActive) link.setAttribute("aria-current", "true");
+    else link.removeAttribute("aria-current");
   });
 }
 
@@ -217,6 +221,24 @@ function toggleTextHidden() {
   state.textHidden = !state.textHidden;
   $("reader").classList.toggle("hidden", state.textHidden);
   $("hideBtn").innerHTML = state.textHidden ? "Show text <kbd>H</kbd>" : "Hide text <kbd>H</kbd>";
+}
+
+// The fixed player bar's actual height varies (the hint row wraps to a
+// second line on narrower viewports), so body's bottom padding — which keeps
+// page content from rendering underneath the bar — is measured from the bar
+// itself via a CSS variable rather than guessed as a fixed pixel value that
+// could drift out of sync with it. Kept in sync two ways: a plain window
+// resize listener (covers the common case — a narrower viewport wrapping the
+// hint row) plus a ResizeObserver as a backup for any other reflow.
+function syncPlayerBarHeight() {
+  const bar = document.querySelector(".player-bar");
+  if (!bar) return;
+  const apply = () => {
+    document.documentElement.style.setProperty("--player-bar-height", `${bar.offsetHeight}px`);
+  };
+  apply(); // set it immediately — don't rely solely on the observer's first callback
+  window.addEventListener("resize", apply);
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(apply).observe(bar);
 }
 
 function bindControls() {

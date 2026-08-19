@@ -58,6 +58,19 @@ def warn_if_overwriting_different_presentation(out_dir, title):
         )
 
 
+def copy_source_into(out_dir, src):
+    """Copy the original input file into its presentation folder, so the
+    source text travels with the generated audio instead of only existing
+    wherever the caller's file happened to live. Returns the copy's filename.
+    A no-op if src already *is* that destination (e.g. regenerating from a
+    previously-copied source.txt in place).
+    """
+    dest = out_dir / f"source{src.suffix}"
+    if src.resolve() != dest.resolve():
+        shutil.copy2(src, dest)
+    return dest.name
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("presentation")
@@ -78,12 +91,18 @@ def main():
     warn_if_overwriting_different_presentation(out_dir, title)
     out_dir.mkdir(parents=True, exist_ok=True)
     for f in out_dir.glob("*"):
-        if f.is_file(): f.unlink()
+        # Don't delete src itself if it's already sitting in out_dir (e.g.
+        # regenerating in place from a previously-copied source.txt) — it
+        # needs to survive to be read below and re-copied by copy_source_into.
+        if f.is_file() and f.resolve() != src:  # src is already resolved, above
+            f.unlink()
+    source_filename = copy_source_into(out_dir, src)
 
     manifest = {
         "title": title,
         "voice": a.voice,
         "speed": a.speed,
+        "source": source_filename,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "sections": [],
     }

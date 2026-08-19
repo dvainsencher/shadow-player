@@ -13,9 +13,13 @@ Chunks may be any length.
 ./generate.sh presentation.txt
 ```
 This synthesizes one `.wav` per chunk with Kokoro and writes them, alongside a
-`manifest.json`, into `audio/<slug>/` — the slug is derived from the filename
-(`presentation.txt` → `audio/presentation/`). Run it again on a different file
-and it creates a separate folder, so multiple presentations coexist.
+`manifest.json` and a copy of your input file (`source.txt`), into
+`audio/<slug>/` — the slug is derived from the filename (`presentation.txt` →
+`audio/presentation/`). Run it again on a different file and it creates a
+separate folder, so multiple presentations coexist. Keeping a copy of the
+source alongside the audio means each presentation folder is self-contained —
+you can find and re-read (or re-generate from) the original text later even if
+the file you first pointed `generate.sh` at has since moved or changed.
 
 Give a presentation its own title/folder name instead of deriving one from the
 filename:

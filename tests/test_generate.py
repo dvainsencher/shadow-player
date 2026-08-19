@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from generate import parse, slugify, warn_if_overwriting_different_presentation
+from generate import parse, slugify, warn_if_overwriting_different_presentation, copy_source_into
 
 
 class ParseTest(unittest.TestCase):
@@ -100,6 +100,39 @@ class WarnIfOverwritingDifferentPresentationTest(unittest.TestCase):
         with patch("sys.stderr", new=StringIO()) as stderr:
             warn_if_overwriting_different_presentation(self.out_dir, "New Talk")
         self.assertEqual(stderr.getvalue(), "")
+
+
+class CopySourceIntoTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self.tmp.name)
+        self.out_dir = self.tmp_path / "out"
+        self.out_dir.mkdir()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_copies_source_file_into_the_output_dir(self):
+        src = self.tmp_path / "input.txt"
+        src.write_text("hello")
+        filename = copy_source_into(self.out_dir, src)
+        self.assertEqual(filename, "source.txt")
+        self.assertEqual((self.out_dir / "source.txt").read_text(), "hello")
+        # The original is untouched.
+        self.assertEqual(src.read_text(), "hello")
+
+    def test_preserves_the_source_extension(self):
+        src = self.tmp_path / "cv.md"
+        src.write_text("# CV")
+        filename = copy_source_into(self.out_dir, src)
+        self.assertEqual(filename, "source.md")
+
+    def test_is_a_noop_when_source_already_is_the_destination(self):
+        existing = self.out_dir / "source.txt"
+        existing.write_text("already here")
+        filename = copy_source_into(self.out_dir, existing)
+        self.assertEqual(filename, "source.txt")
+        self.assertEqual(existing.read_text(), "already here")
 
 
 if __name__ == "__main__":

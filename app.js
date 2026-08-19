@@ -25,7 +25,7 @@ async function init() {
   bindKeyboard();
 
   state.presentations = await fetchPresentations();
-  renderPresentationPicker();
+  renderPresentationList();
 
   const savedSlug = localStorage.getItem(LAST_SLUG_KEY);
   const initialSlug = pickInitialSlug(state.presentations, savedSlug);
@@ -42,14 +42,32 @@ async function fetchPresentations() {
   return response.json();
 }
 
-function renderPresentationPicker() {
-  const select = $("presentationSelect");
-  select.innerHTML = "";
+function renderPresentationList() {
+  const list = $("presentations");
+  list.innerHTML = "";
   state.presentations.forEach((presentation) => {
-    const option = document.createElement("option");
-    option.value = presentation.slug;
-    option.textContent = `${presentation.title} (${presentation.chunks} chunks)`;
-    select.append(option);
+    const link = document.createElement("button");
+    link.className = "presentation-link";
+    link.dataset.slug = presentation.slug;
+    link.classList.toggle("active", presentation.slug === state.slug);
+
+    const title = document.createElement("span");
+    title.className = "presentation-title";
+    title.textContent = presentation.title;
+
+    const meta = document.createElement("span");
+    meta.className = "presentation-meta";
+    meta.textContent = presentation.chunks === 1 ? "1 chunk" : `${presentation.chunks} chunks`;
+
+    link.append(title, meta);
+    link.onclick = () => loadPresentation(presentation.slug).catch(reportError);
+    list.append(link);
+  });
+}
+
+function updatePresentationActiveState() {
+  document.querySelectorAll(".presentation-link").forEach((link) => {
+    link.classList.toggle("active", link.dataset.slug === state.slug);
   });
 }
 
@@ -69,7 +87,7 @@ async function loadPresentation(slug) {
   state.chunks = flattenChunks(state.manifest);
 
   localStorage.setItem(LAST_SLUG_KEY, slug);
-  $("presentationSelect").value = slug;
+  updatePresentationActiveState();
 
   renderMeta();
   renderSpeedButtons();
@@ -207,15 +225,6 @@ function bindControls() {
   $("prev").onclick = () => selectChunk(state.current - 1);
   $("next").onclick = () => selectChunk(state.current + 1);
   $("hideBtn").onclick = toggleTextHidden;
-  $("presentationSelect").onchange = (e) => {
-    loadPresentation(e.target.value).catch((error) => {
-      // The <select> already shows the pick the user just made even though
-      // loadPresentation threw before committing it — snap it back to what's
-      // actually loaded so the dropdown doesn't lie about the current state.
-      if (state.slug) $("presentationSelect").value = state.slug;
-      reportError(error);
-    });
-  };
   audio.onended = () => setPlayButtonLabel(false);
 }
 
@@ -229,7 +238,7 @@ const KEY_ACTIONS = {
 
 function bindKeyboard() {
   document.onkeydown = (e) => {
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+    if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
 
     // Number keys select a speed by position (1 = SPEEDS[0], 2 = SPEEDS[1], ...).
     const asNumber = Number(e.key);

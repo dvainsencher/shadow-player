@@ -3,12 +3,19 @@
 <title>Shadow Player</title><link rel="stylesheet" href="style.css"></head>
 <body>
 <header><div><div class="eyebrow">LOCAL PRESENTATION SHADOWING</div><h1>Shadow Player</h1><div id="meta"></div></div>
-<div class="header-actions"><select id="presentationSelect" title="Choose a presentation" aria-label="Choose a presentation"></select>
-<button id="hideBtn">Hide text <kbd>H</kbd></button></div></header>
-<div class="layout"><nav id="sections"></nav><main>
+<button id="hideBtn">Hide text <kbd>H</kbd></button></header>
+<div class="layout"><nav id="library">
+<div class="nav-heading">Library</div>
+<div id="presentations"></div>
+<div class="nav-heading">Contents</div>
+<div id="sections"></div>
+</nav><main>
 <div class="topbar"><div id="position"></div><div class="speed" id="speedButtons"></div></div>
 <div id="reader"></div>
+</main></div>
+<footer class="player-bar">
 <div class="player"><button id="prev">←</button><button id="play" class="primary">▶ Play</button>
 <button id="repeat">↻ Repeat</button><button id="next">Next →</button></div>
 <div class="hint"><span>Space play/pause</span><span>R repeat</span><span>← → navigate</span><span>H hide text</span><span id="speedHint"></span></div>
-</main></div><script type="module" src="app.js"></script></body></html>
+</footer>
+<script type="module" src="app.js"></script></body></html>

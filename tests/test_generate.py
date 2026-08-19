@@ -1,9 +1,13 @@
+import json
 import sys
+import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from generate import parse, slugify
+from generate import parse, slugify, warn_if_overwriting_different_presentation
 
 
 class ParseTest(unittest.TestCase):
@@ -55,6 +59,47 @@ class SlugifyTest(unittest.TestCase):
 
     def test_falls_back_to_default_when_nothing_alphanumeric_remains(self):
         self.assertEqual(slugify("###"), "presentation")
+
+
+class WarnIfOverwritingDifferentPresentationTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out_dir = Path(self.tmp.name) / "some-slug"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_no_warning_when_folder_does_not_exist_yet(self):
+        with patch("sys.stderr", new=StringIO()) as stderr:
+            warn_if_overwriting_different_presentation(self.out_dir, "My Talk")
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_no_warning_when_regenerating_the_same_title(self):
+        self.out_dir.mkdir(parents=True)
+        (self.out_dir / "manifest.json").write_text(
+            json.dumps({"title": "My Talk"}), encoding="utf-8"
+        )
+        with patch("sys.stderr", new=StringIO()) as stderr:
+            warn_if_overwriting_different_presentation(self.out_dir, "My Talk")
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_warns_when_a_different_title_would_be_overwritten(self):
+        self.out_dir.mkdir(parents=True)
+        (self.out_dir / "manifest.json").write_text(
+            json.dumps({"title": "Old Talk"}), encoding="utf-8"
+        )
+        with patch("sys.stderr", new=StringIO()) as stderr:
+            warn_if_overwriting_different_presentation(self.out_dir, "New Talk")
+        message = stderr.getvalue()
+        self.assertIn("Old Talk", message)
+        self.assertIn("New Talk", message)
+
+    def test_no_warning_for_a_malformed_existing_manifest(self):
+        self.out_dir.mkdir(parents=True)
+        (self.out_dir / "manifest.json").write_text("{not valid json", encoding="utf-8")
+        with patch("sys.stderr", new=StringIO()) as stderr:
+            warn_if_overwriting_different_presentation(self.out_dir, "New Talk")
+        self.assertEqual(stderr.getvalue(), "")
 
 
 if __name__ == "__main__":

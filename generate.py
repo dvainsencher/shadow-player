@@ -37,6 +37,27 @@ def slugify(name):
     slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
     return slug or "presentation"
 
+def warn_if_overwriting_different_presentation(out_dir, title):
+    """Two different titles can slugify to the same folder (e.g. "Q1 Report" and
+    "Q1, Report!" both become audio/q1-report/). Regenerating silently overwrites
+    whatever was there, so warn when that's about to replace a different
+    presentation rather than just refresh the same one.
+    """
+    manifest_path = out_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return
+    try:
+        existing_title = json.loads(manifest_path.read_text(encoding="utf-8")).get("title")
+    except (json.JSONDecodeError, OSError):
+        return
+    if existing_title and existing_title != title:
+        print(
+            f"Warning: audio/{out_dir.name}/ already holds \"{existing_title}\" — "
+            f"overwriting it with \"{title}\" (both slugify to the same folder name).",
+            file=sys.stderr,
+        )
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("presentation")
@@ -54,6 +75,7 @@ def main():
     title = a.name or src.stem
     slug = slugify(title)
     out_dir = AUDIO / slug
+    warn_if_overwriting_different_presentation(out_dir, title)
     out_dir.mkdir(parents=True, exist_ok=True)
     for f in out_dir.glob("*"):
         if f.is_file(): f.unlink()

@@ -208,7 +208,13 @@ function bindControls() {
   $("next").onclick = () => selectChunk(state.current + 1);
   $("hideBtn").onclick = toggleTextHidden;
   $("presentationSelect").onchange = (e) => {
-    loadPresentation(e.target.value).catch(reportError);
+    loadPresentation(e.target.value).catch((error) => {
+      // The <select> already shows the pick the user just made even though
+      // loadPresentation threw before committing it — snap it back to what's
+      // actually loaded so the dropdown doesn't lie about the current state.
+      if (state.slug) $("presentationSelect").value = state.slug;
+      reportError(error);
+    });
   };
   audio.onended = () => setPlayButtonLabel(false);
 }

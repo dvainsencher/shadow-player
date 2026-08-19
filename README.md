@@ -31,9 +31,11 @@ filename:
 ```bash
 ./start.sh
 ```
-Then open http://127.0.0.1:8000. The header has a dropdown to switch between
-every presentation you've generated (most recently generated first) — your
-choice is remembered across reloads.
+Then open http://127.0.0.1:8000. The left sidebar's "Library" list switches
+between every presentation you've generated (most recently generated first) —
+your choice is remembered across reloads. The player (play/repeat/prev/next)
+stays fixed to the bottom of the window so it's reachable no matter how far
+you've scrolled into a chunk's text.
 
 Default voice: `am_adam`; default generation speed: `0.85`.
 

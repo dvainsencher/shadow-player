@@ -94,7 +94,7 @@ def main():
         # Don't delete src itself if it's already sitting in out_dir (e.g.
         # regenerating in place from a previously-copied source.txt) — it
         # needs to survive to be read below and re-copied by copy_source_into.
-        if f.is_file() and f.resolve() != src.resolve():
+        if f.is_file() and f.resolve() != src:  # src is already resolved, above
             f.unlink()
     source_filename = copy_source_into(out_dir, src)
 

@@ -3,17 +3,33 @@
 Local-only presentation shadowing with Kokoro.
 
 ## Format
-In `presentation.txt`:
+In a presentation `.txt` file (see `presentation.txt` for a sample):
 - `# Section title` starts a section.
 - `---` starts a new shadowing chunk.
 Chunks may be any length.
 
-## Run
+## Generating a presentation
 ```bash
 ./generate.sh presentation.txt
+```
+This synthesizes one `.wav` per chunk with Kokoro and writes them, alongside a
+`manifest.json`, into `audio/<slug>/` — the slug is derived from the filename
+(`presentation.txt` → `audio/presentation/`). Run it again on a different file
+and it creates a separate folder, so multiple presentations coexist.
+
+Give a presentation its own title/folder name instead of deriving one from the
+filename:
+```bash
+./generate.sh cv.txt am_adam 0.85 --name "Acme Corp — Backend Role"
+```
+
+## Running the app
+```bash
 ./start.sh
 ```
-Then open http://127.0.0.1:8000
+Then open http://127.0.0.1:8000. The header has a dropdown to switch between
+every presentation you've generated (most recently generated first) — your
+choice is remembered across reloads.
 
 Default voice: `am_adam`; default generation speed: `0.85`.
 
@@ -27,15 +43,14 @@ Everything stays on the local machine. The server binds only to 127.0.0.1.
 
 ## Audio
 
-`audio/` is produced by `./generate.sh` (one `.wav` + `.txt` pair per chunk) and is
-gitignored — it's regenerated locally, not committed. `presentation.json` and
-`presentation.txt` in this repo are a small sample; running `./generate.sh` on your
-own `presentation.txt` overwrites `presentation.json` and regenerates `audio/` to
-match.
+`audio/` is entirely gitignored — every presentation's `manifest.json`, `.wav`,
+and `.txt` files are generated locally by `./generate.sh`, never committed.
+`presentation.txt` in this repo is just a sample input.
 
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -p "test_*.py" -v   # generate.py, server.py
+node --test                                                 # frontend helpers
 ```
-Runs on every push/PR via GitHub Actions (`.github/workflows/tests.yml`).
+Both run on every push/PR via GitHub Actions (`.github/workflows/tests.yml`).

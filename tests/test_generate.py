@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from generate import parse
+from generate import parse, slugify
 
 
 class ParseTest(unittest.TestCase):
@@ -41,6 +41,20 @@ class ParseTest(unittest.TestCase):
 
     def test_empty_input_yields_no_sections(self):
         self.assertEqual(parse(""), [])
+
+
+class SlugifyTest(unittest.TestCase):
+    def test_lowercases_and_hyphenates_spaces(self):
+        self.assertEqual(slugify("My Presentation"), "my-presentation")
+
+    def test_strips_punctuation(self):
+        self.assertEqual(slugify("Job, Title (ID: 5)"), "job-title-id-5")
+
+    def test_collapses_repeated_separators(self):
+        self.assertEqual(slugify("a---b   c"), "a-b-c")
+
+    def test_falls_back_to_default_when_nothing_alphanumeric_remains(self):
+        self.assertEqual(slugify("###"), "presentation")
 
 
 if __name__ == "__main__":
